@@ -1,0 +1,419 @@
+
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Designer Clothes Inventory System</title>
+
+<style>
+
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+    background:#f4f6f9;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+h1{
+    text-align:center;
+}
+
+.card{
+    background:#fff;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+.dashboard{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.stat{
+    flex:1;
+    min-width:200px;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    text-align:center;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+input{
+    padding:10px;
+    margin:5px;
+    width:220px;
+}
+
+button{
+    padding:8px 15px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    color:white;
+}
+
+.save-btn{
+    background:green;
+}
+
+.edit-btn{
+    background:orange;
+}
+
+.delete-btn{
+    background:red;
+}
+
+.stock-btn{
+    background:#0078d7;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#0078d7;
+    color:white;
+}
+
+img{
+    width:80px;
+    height:80px;
+    object-fit:cover;
+    border-radius:8px;
+}
+
+.search-box{
+    width:300px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Designer Clothes Inventory System</h1>
+
+<div class="dashboard">
+
+<div class="stat">
+<h3>Total Designs</h3>
+<h2 id="totalDesigns">0</h2>
+</div>
+
+<div class="stat">
+<h3>Total Stock</h3>
+<h2 id="totalStock">0</h2>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Add New Dress</h2>
+
+<input type="text" id="dressName" placeholder="Dress Name">
+
+<input type="text" id="dressColor" placeholder="Color">
+
+<input type="number" id="dressQty" placeholder="Quantity">
+
+<input type="file" id="dressPhoto" accept="image/*">
+
+<br><br>
+
+<button class="save-btn" onclick="addDress()">
+Save Dress
+</button>
+
+</div>
+
+<div class="card">
+
+<input
+class="search-box"
+type="text"
+id="search"
+placeholder="Search Dress..."
+onkeyup="renderTable()">
+
+</div>
+
+<div class="card">
+
+<table>
+
+<thead>
+<tr>
+<th>Photo</th>
+<th>Dress Name</th>
+<th>Color</th>
+<th>Quantity</th>
+<th>Stock</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+<script>
+
+let inventory =
+JSON.parse(localStorage.getItem("inventory")) || [];
+
+function saveStorage(){
+    localStorage.setItem(
+        "inventory",
+        JSON.stringify(inventory)
+    );
+}
+
+function addDress(){
+
+    let name =
+    document.getElementById("dressName").value;
+
+    let color =
+    document.getElementById("dressColor").value;
+
+    let qty =
+    parseInt(document.getElementById("dressQty").value);
+
+    let photoInput =
+    document.getElementById("dressPhoto");
+
+    if(!name || !color || !qty){
+        alert("Please fill all fields");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = function(e){
+
+        inventory.push({
+            name:name,
+            color:color,
+            qty:qty,
+            photo:e.target.result
+        });
+
+        saveStorage();
+
+        clearForm();
+
+        renderTable();
+    };
+
+    if(photoInput.files[0]){
+        reader.readAsDataURL(photoInput.files[0]);
+    }
+    else{
+
+        inventory.push({
+            name:name,
+            color:color,
+            qty:qty,
+            photo:""
+        });
+
+        saveStorage();
+
+        clearForm();
+
+        renderTable();
+    }
+}
+
+function clearForm(){
+
+    document.getElementById("dressName").value="";
+
+    document.getElementById("dressColor").value="";
+
+    document.getElementById("dressQty").value="";
+
+    document.getElementById("dressPhoto").value="";
+}
+
+function editDress(index){
+
+    let item = inventory[index];
+
+    let newName =
+    prompt("Dress Name",item.name);
+
+    let newColor =
+    prompt("Color",item.color);
+
+    let newQty =
+    prompt("Quantity",item.qty);
+
+    if(newName && newColor && newQty){
+
+        inventory[index].name = newName;
+        inventory[index].color = newColor;
+        inventory[index].qty = parseInt(newQty);
+
+        saveStorage();
+
+        renderTable();
+    }
+}
+
+function deleteDress(index){
+
+    if(confirm("Delete this dress?")){
+
+        inventory.splice(index,1);
+
+        saveStorage();
+
+        renderTable();
+    }
+}
+
+function increaseStock(index){
+
+    inventory[index].qty++;
+
+    saveStorage();
+
+    renderTable();
+}
+
+function decreaseStock(index){
+
+    if(inventory[index].qty > 0){
+
+        inventory[index].qty--;
+
+        saveStorage();
+
+        renderTable();
+    }
+}
+
+function renderTable(){
+
+    let search =
+    document.getElementById("search")
+    .value
+    .toLowerCase();
+
+    let html = "";
+
+    let totalStock = 0;
+
+    let uniqueDesigns = new Set();
+
+    inventory.forEach((item,index)=>{
+
+        if(
+          item.name.toLowerCase().includes(search)
+        ){
+
+            html += `
+
+            <tr>
+
+            <td>
+            ${
+                item.photo
+                ?
+                `<img src="${item.photo}">`
+                :
+                'No Photo'
+            }
+            </td>
+
+            <td>${item.name}</td>
+
+            <td>${item.color}</td>
+
+            <td>${item.qty}</td>
+
+            <td>
+
+            <button
+            class="stock-btn"
+            onclick="increaseStock(${index})">
+            +
+            </button>
+
+            <button
+            class="stock-btn"
+            onclick="decreaseStock(${index})">
+            -
+            </button>
+
+            </td>
+
+            <td>
+
+            <button
+            class="edit-btn"
+            onclick="editDress(${index})">
+            Edit
+            </button>
+
+            <button
+            class="delete-btn"
+            onclick="deleteDress(${index})">
+            Delete
+            </button>
+
+            </td>
+
+            </tr>
+            `;
+        }
+
+        totalStock += item.qty;
+
+        uniqueDesigns.add(item.name);
+
+    });
+
+    document.getElementById("tableBody")
+    .innerHTML = html;
+
+    document.getElementById("totalStock")
+    .innerText = totalStock;
+
+    document.getElementById("totalDesigns")
+    .innerText = uniqueDesigns.size;
+}
+
+renderTable();
+
+</script>
+
+</body>
+</html>
